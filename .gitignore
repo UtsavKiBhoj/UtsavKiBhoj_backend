@@ -1,3 +1,4 @@
 # Ignored file by git
 # gitignore
 .env
+requirements.txt
