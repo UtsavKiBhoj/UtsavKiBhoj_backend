@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from .models import User, Role
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
 
+# User Registration Serializer 
 class User_Serializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -9,7 +11,7 @@ class User_Serializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True}
         }
-
+        
     def create(self, validated_data):
         # Hash the password before saving
         validated_data['password'] = make_password(validated_data.get('password'))
@@ -34,3 +36,25 @@ class Role_Serializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = '__all__'
+        
+# User Login Serializer
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        # Check if user exists
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid email or password.")
+
+        # Check password
+        if not check_password(password, user.password):
+            raise serializers.ValidationError("Invalid email or password.")
+
+        data['user'] = user
+        return data
