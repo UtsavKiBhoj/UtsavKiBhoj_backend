@@ -31,7 +31,7 @@ class User_Serializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Password field cannot be empty.")
         return data
         
-
+# User Role Serializer.
 class Role_Serializer(serializers.ModelSerializer):
     class Meta:
         model = Role
@@ -58,3 +58,9 @@ class LoginSerializer(serializers.Serializer):
 
         data['user'] = user
         return data
+    
+# user update serializer
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['name', 'email']  # Specify fields that can be updated
