@@ -19,6 +19,10 @@ class User(models.Model):
     address = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    USERNAME_FIELDS="email"
+    
+    REQUIRED_FIELDS= ["name","email", "password", "phone", "address"]
 
     def __str__(self):
         return self.name

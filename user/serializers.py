@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import check_password
 
 # User Registration Serializer 
 class User_Serializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='id', read_only=True)
     class Meta:
         model = User
         fields = ['user_id', 'role', 'name', 'email', 'password', 'phone', 'address', 'created_at', 'updated_at']

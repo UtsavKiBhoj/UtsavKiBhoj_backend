@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt',
+    # 'rest_framework_simplejwt',
     'corsheaders',
     'drf_yasg',
     'user',
@@ -106,21 +106,21 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
 }
 
-SIMPLE_JWT = {
-    'USER_ID_FIELD': 'user_id',
-    'ALGORITHM': 'HS256',
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_CLAIM': 'id',
-    'SIGNING_KEY': os.getenv('SECRET_KEY'),
-}
+# SIMPLE_JWT = {
+#     'USER_ID_FIELD': 'user_id',
+#     'ALGORITHM': 'HS256',
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#     'USER_ID_CLAIM': 'id',
+#     'SIGNING_KEY': os.getenv('SECRET_KEY'),
+# }
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {

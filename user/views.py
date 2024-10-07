@@ -11,6 +11,11 @@ from rest_framework.permissions import AllowAny
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, UserUpdateSerializer
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+import jwt, os, datetime
+from rest_framework import generics
+
 # Create your views here.
 
 
@@ -45,6 +50,7 @@ class RegisterUser(APIView):
 # User Login API
 class LoginUser(APIView):
     permission_classes = [AllowAny]  # Allow any user to register without authentication
+
     @swagger_auto_schema(
         operation_id="login_user",
         tags=["User"],
@@ -58,11 +64,23 @@ class LoginUser(APIView):
             user = serializer.validated_data['user']
 
             # Generate JWT token
-            refresh = RefreshToken.for_user(user)
+            # payload = {
+            #     'id': user.user_id,  
+            #     'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)  # Set expiration time
+            # }
+            # Ensure you have set this in your Django settings
+            # secret_key = os.getenv("SECRET_KEY")
+            # print("bdwbewbfee----secret_keysecret_key------------",secret_key)
+            # jwt_token = jwt.encode(payload, secret_key, algorithm='HS256')
+
+            # Generate Refresh and Access tokens using Simple JWT
+            # refresh = RefreshToken.for_user(user)
+
             return Response({
-                'message': 'Login successful',
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
+                'message': f'{"Welcome", user.name, 'Login successful'}',
+                # 'refresh': str(refresh),
+                # 'access': str(refresh.access_token),
+                # 'jwt': jwt_token  # Include your generated JWT token in the response
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -71,19 +89,27 @@ class LoginUser(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
         
         
+class UserListView(generics.ListAPIView):
+    @swagger_auto_schema(
+        operation_id="list_users",
+        tags=["User"],
+        responses={
+            200: 'Users List view',
+            400: 'Bad Request',
+            404: 'User not found'
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        """Retrieve list of users"""
+        return super().get(request, *args, **kwargs)
+
+    queryset = User.objects.all()
+    serializer_class = User_Serializer
+        
+        
 # To Update the user details.
 class UpdateUser(APIView):
-
-    # Define JWT token parameter for Swagger
-    token_param_config = openapi.Parameter(
-        'Authorization',
-        in_=openapi.IN_HEADER,
-        description="JWT token in format: Bearer <token>",
-        type=openapi.TYPE_STRING
-    )
-    
     @swagger_auto_schema(
-        security=[{'bearerAuth': []}],  # Specify JWT authentication for Swagger
         operation_id="update_user",
         tags=["User"],
         request_body=UserUpdateSerializer,  # Expected input data format
@@ -114,3 +140,21 @@ class UpdateUser(APIView):
 
         # Return validation errors if any
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+class DeleteUser(APIView):
+    @swagger_auto_schema(
+        operation_id="delete_user",
+        tags=["User"],
+        request_body=LoginSerializer,  # Define the expected input
+        responses={
+            200: "User deleted successfully",
+            400: "Bad Request",
+            404: "User not found",
+        })
+    def delete(self, request, user_id):
+        try:
+            user = User.objects.get(user_id=user_id)
+            user.delete()
+            return Response({"message": "User deleted successfully."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
