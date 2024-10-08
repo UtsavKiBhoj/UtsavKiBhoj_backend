@@ -18,7 +18,6 @@ from rest_framework import generics
 
 # Create your views here.
 
-
 # User Registration API
 class RegisterUser(APIView):
     permission_classes = [AllowAny]  # Allow any user to register without authentication
@@ -50,7 +49,7 @@ class RegisterUser(APIView):
 # User Login API
 class LoginUser(APIView):
     permission_classes = [AllowAny]  # Allow any user to register without authentication
-
+    # Swagger Annotation for the UI in swaggger
     @swagger_auto_schema(
         operation_id="login_user",
         tags=["User"],
@@ -63,24 +62,8 @@ class LoginUser(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
 
-            # Generate JWT token
-            # payload = {
-            #     'id': user.user_id,  
-            #     'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)  # Set expiration time
-            # }
-            # Ensure you have set this in your Django settings
-            # secret_key = os.getenv("SECRET_KEY")
-            # print("bdwbewbfee----secret_keysecret_key------------",secret_key)
-            # jwt_token = jwt.encode(payload, secret_key, algorithm='HS256')
-
-            # Generate Refresh and Access tokens using Simple JWT
-            # refresh = RefreshToken.for_user(user)
-
             return Response({
                 'message': f'{"Welcome", user.name, 'Login successful'}',
-                # 'refresh': str(refresh),
-                # 'access': str(refresh.access_token),
-                # 'jwt': jwt_token  # Include your generated JWT token in the response
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -89,6 +72,7 @@ class LoginUser(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
         
         
+#  Users List View
 class UserListView(generics.ListAPIView):
     @swagger_auto_schema(
         operation_id="list_users",
@@ -141,6 +125,8 @@ class UpdateUser(APIView):
         # Return validation errors if any
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
+    
+# Delete Users View.
 class DeleteUser(APIView):
     @swagger_auto_schema(
         operation_id="delete_user",
