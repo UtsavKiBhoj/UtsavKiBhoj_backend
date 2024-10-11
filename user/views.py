@@ -61,9 +61,16 @@ class LoginUser(APIView):
 
         if serializer.is_valid():
             user = serializer.validated_data['user']
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
 
             return Response({
                 'message': f'{"Welcome", user.name, 'Login successful'}',
+                'access_token': access_token,
+                'refresh_token': refresh_token
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -73,7 +80,9 @@ class LoginUser(APIView):
         
         
 #  Users List View
-class UserListView(generics.ListAPIView):
+class UserListView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_id="list_users",
         tags=["User"],
@@ -85,14 +94,16 @@ class UserListView(generics.ListAPIView):
     )
     def get(self, request, *args, **kwargs):
         """Retrieve list of users"""
-        return super().get(request, *args, **kwargs)
-
-    queryset = User.objects.all()
-    serializer_class = User_Serializer
+        users = User.objects.all()  # Use your custom User model
+        serializer = User_Serializer(users, many=True)
+        return Response(serializer.data)
         
         
 # To Update the user details.
 class UpdateUser(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     @swagger_auto_schema(
         operation_id="update_user",
         tags=["User"],

@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 # Create your models here.
 class Role(models.Model):
@@ -8,8 +9,29 @@ class Role(models.Model):
 
     def __str__(self):
         return self.role_name
+    
+    
+    
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        return self.create_user(email, password, **extra_fields)
+
 
 class User(models.Model):
+    is_active = models.BooleanField(default=True)  # Add this field to your model
+    is_staff = models.BooleanField(default=False)
     user_id = models.AutoField(primary_key=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -20,9 +42,21 @@ class User(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    USERNAME_FIELDS="email"
+    objects = UserManager()
     
-    REQUIRED_FIELDS= ["name","email", "password", "phone", "address"]
+    USERNAME_FIELD="email"
+    REQUIRED_FIELDS= ["name", "password", "phone", "address"]
+    
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def is_authenticated(self):
+        return True
 
     def __str__(self):
         return self.name

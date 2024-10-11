@@ -5,10 +5,10 @@ from django.contrib.auth.hashers import check_password
 
 # User Registration Serializer 
 class User_Serializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source='id', read_only=True)
+    user_id = serializers.IntegerField()
     class Meta:
         model = User
-        fields = ['user_id', 'role', 'name', 'email', 'password', 'phone', 'address', 'created_at', 'updated_at']
+        fields = ['user_id', 'role', 'name', 'email', 'password', 'phone', 'address', 'created_at', 'updated_at', "is_active"]
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -64,4 +64,4 @@ class LoginSerializer(serializers.Serializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['name', 'email']  # Specify fields that can be updated
+        fields = ['name', 'email', 'phone', 'address']  # Specify fields that can be updated
