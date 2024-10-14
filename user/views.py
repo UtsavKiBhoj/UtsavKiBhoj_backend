@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework import status
 from .models import User, Role
 from .serializers import User_Serializer
@@ -12,9 +13,8 @@ from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, UserUpdateSerializer
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-import jwt, os, datetime
-from rest_framework import generics
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 # Create your views here.
 
@@ -155,3 +155,43 @@ class DeleteUser(APIView):
             return Response({"message": "User deleted successfully."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        
+class LogoutUser(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_id="logout_user",
+        tags=["User"],
+        responses={
+            205: 'Logout successful',
+            400: 'Bad Request',
+            401: 'Unauthorized'
+        },
+    )
+    def post(self, request):
+        try:
+            # Extract the refresh token from request data
+            refresh_token = request.data["refreshToken"]
+            print("refresh_token--------refresh_token----", refresh_token)
+
+            # Decode and validate the token using RefreshToken
+            token = RefreshToken(refresh_token)
+            
+            # Blacklist the token
+            try:
+                # Check if the token is already blacklisted
+                BlacklistedToken.objects.get(token=OutstandingToken.objects.get(token=token))
+                return Response({'error': 'Token already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
+            except BlacklistedToken.DoesNotExist:
+                # If not already blacklisted, blacklist it
+                token.blacklist()
+                return Response({'message': 'Logout successful'}, status=status.HTTP_205_RESET_CONTENT)
+
+        except KeyError:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        except OutstandingToken.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+        except TokenError:
+            return Response({'error': 'Token is invalid or expired'}, status=status.HTTP_401_UNAUTHORIZED)
