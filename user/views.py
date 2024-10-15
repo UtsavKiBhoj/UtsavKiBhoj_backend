@@ -10,6 +10,7 @@ from rest_framework.renderers import JSONRenderer
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import AllowAny
 from drf_yasg import openapi
+from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, UserUpdateSerializer
 from rest_framework.response import Response
@@ -97,6 +98,28 @@ class UserListView(APIView):
         users = User.objects.all()  # Use your custom User model
         serializer = User_Serializer(users, many=True)
         return Response(serializer.data)
+    
+# Get/fetch User BY ID:
+class getUserByID(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_id="get_user_by_id",
+        tags=["User"],
+        responses={
+            200: openapi.Response('User retrieved successfully', User_Serializer),
+            404: 'User not found'
+        },
+        manual_parameters=[
+            openapi.Parameter('user_id', openapi.IN_PATH, description="User ID", type=openapi.TYPE_INTEGER)
+        ]
+    )
+    def get(self, request, user_id):
+        user = get_object_or_404(User, user_id=user_id)
+        serializer = User_Serializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
         
         
 # To Update the user details.
@@ -174,7 +197,6 @@ class LogoutUser(APIView):
         try:
             # Extract the refresh token from request data
             refresh_token = request.data["refreshToken"]
-            print("refresh_token--------refresh_token----", refresh_token)
 
             # Decode and validate the token using RefreshToken
             token = RefreshToken(refresh_token)
@@ -187,7 +209,7 @@ class LogoutUser(APIView):
             except BlacklistedToken.DoesNotExist:
                 # If not already blacklisted, blacklist it
                 token.blacklist()
-                return Response({'message': 'Logout successful'}, status=status.HTTP_205_RESET_CONTENT)
+                return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
 
         except KeyError:
             return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
