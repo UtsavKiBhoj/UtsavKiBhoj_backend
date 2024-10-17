@@ -32,6 +32,7 @@ class UserManager(BaseUserManager):
 class User(models.Model):
     is_active = models.BooleanField(default=True)  # Add this field to your model
     is_staff = models.BooleanField(default=False)
+    last_login = models.DateTimeField(null=True, blank=True)
     user_id = models.AutoField(primary_key=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -46,6 +47,10 @@ class User(models.Model):
     
     USERNAME_FIELD="email"
     REQUIRED_FIELDS= ["name", "password", "phone", "address"]
+    
+    @classmethod
+    def get_email_field_name(cls):
+        return 'email'
     
     def __str__(self):
         return self.name

@@ -1,23 +1,27 @@
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework import status
 from .models import User, Role
-from .serializers import User_Serializer
+from .serializers import User_Serializer,ForgotPasswordSerializer,ResetPasswordSerializer, LoginSerializer, UserUpdateSerializer
 from rest_framework.views import APIView
 from rest_framework.renderers import JSONRenderer
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.permissions import AllowAny
 from drf_yasg import openapi
 from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, UserUpdateSerializer
-from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.contrib.auth.hashers import make_password
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+import os
+from dotenv import load_dotenv
 
 # Create your views here.
+load_dotenv()
 
 # User Registration API
 class RegisterUser(APIView):
@@ -183,7 +187,6 @@ class DeleteUser(APIView):
 class LogoutUser(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
     @swagger_auto_schema(
         operation_id="logout_user",
         tags=["User"],
@@ -217,3 +220,86 @@ class LogoutUser(APIView):
             return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
         except TokenError:
             return Response({'error': 'Token is invalid or expired'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    @swagger_auto_schema(
+        operation_id="Forgot_Password",
+        tags=["User"],
+        responses={
+            205: 'Forget password link sent to your mail successfully',
+            400: 'Bad Request',
+            401: 'Unauthorized'
+        },
+    )
+    def post(self, request):
+        # Validate the request data using ForgotPasswordSerializer
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            # Extract the email from the validated data
+            email = serializer.validated_data.get('email')
+
+            # Try to find the user with the provided email
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({'email': 'This email is not registered.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Generate the user ID and token
+            #urlsafe_base64_encode: Encodes the user's primary key (user.pk) in a URL-safe base64 format (uid). This helps ensure that the user ID is securely passed in the URL.
+            # PasswordResetTokenGenerator().make_token(user): Generates a secure token that will be sent in the password reset link to the user’s email.
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = PasswordResetTokenGenerator().make_token(user)
+            RESET_PASSWORD_ROUTE = os.getenv("RESET_PASSWORD_ROUTE")
+
+            # Create the password reset link
+            reset_link = f'{RESET_PASSWORD_ROUTE}/{uid}/{token}/'
+
+            # Send the email with the reset link
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_link}',
+                'no-reply@yourdomain.com',
+                [user.email],
+                fail_silently=False,
+            )
+
+            # If email is successfully sent, return a success message
+            return Response({"message": "Password reset email sent successfully."}, status=status.HTTP_200_OK)
+        
+        # Return errors if the serializer data is invalid
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_id="Reset_Password",
+        tags=["User"],
+        responses={
+            200: 'Password reset successfully',
+            400: 'Invalid Token or Bad Request',
+            401: 'Unauthorized'
+        },
+    )
+    def post(self, request, uidb64, token):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                uid = force_str(urlsafe_base64_decode(uidb64))
+                user = User.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the token is valid
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Set the new password
+            user.password = make_password(serializer.validated_data['password'])
+            user.save()
+
+            return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

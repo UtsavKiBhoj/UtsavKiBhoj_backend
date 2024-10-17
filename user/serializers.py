@@ -3,6 +3,7 @@ from .models import User, Role
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.hashers import check_password
 
+
 # User Registration Serializer 
 class User_Serializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField()
@@ -64,4 +65,35 @@ class LoginSerializer(serializers.Serializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['name', 'email', 'phone', 'address']  # Specify fields that can be updated
+        # Specify fields that can be updated
+        fields = ['name', 'email', 'phone', 'address']  
+        
+        
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is not registered.")
+        return value
+        
+# class ResetPasswordSerializer(serializers.Serializer):
+#     new_password = serializers.CharField(write_only=True)
+#     confirm_password = serializers.CharField(write_only=True)
+
+#     def validate(self, data):
+#         if data['new_password'] != data['confirm_password']:
+#             raise serializers.ValidationError("Passwords do not match.")
+#         return data
+
+#     def save(self, user):
+#         user.set_password(self.validated_data['new_password'])
+#         user.save()
+
+class ResetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+
+    def validate_password(self, value):
+        # Add custom password validation if needed
+        # if len(value) < 8:
+        #     raise serializers.ValidationError("Password must be at least 8 characters long.")
+        return value
