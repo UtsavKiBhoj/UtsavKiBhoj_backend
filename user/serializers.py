@@ -75,19 +75,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
         if not User.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is not registered.")
         return value
-        
-# class ResetPasswordSerializer(serializers.Serializer):
-#     new_password = serializers.CharField(write_only=True)
-#     confirm_password = serializers.CharField(write_only=True)
-
-#     def validate(self, data):
-#         if data['new_password'] != data['confirm_password']:
-#             raise serializers.ValidationError("Passwords do not match.")
-#         return data
-
-#     def save(self, user):
-#         user.set_password(self.validated_data['new_password'])
-#         user.save()
 
 class ResetPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, required=True, min_length=8)

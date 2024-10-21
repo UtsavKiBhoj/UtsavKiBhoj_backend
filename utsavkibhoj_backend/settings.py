@@ -91,6 +91,9 @@ WSGI_APPLICATION = 'utsavkibhoj_backend.wsgi.application'
 
 AUTH_USER_MODEL = 'user.User'
 
+TIME_ZONE = 'UTC'  # Change to your desired timezone, e.g., 'America/New_York/India'
+USE_TZ = True
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
