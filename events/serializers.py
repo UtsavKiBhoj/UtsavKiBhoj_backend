@@ -1,12 +1,14 @@
 from rest_framework import serializers
 from .models import Event, EventLocation
 from django.utils import timezone
+from user.serializers import User_Serializer
 
 
 class EventSerializer(serializers.ModelSerializer):
+    organizer = User_Serializer()
     class Meta:
         model = Event
-        fields = ['event_name', 'description', 'date']
+        fields = ['event_id', 'event_name', 'description', 'date', 'organizer']
 
     def validate_event_name(self, value):
         if not value:
