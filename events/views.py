@@ -63,9 +63,7 @@ class CreateEventLocationView(APIView):
     )
     def post(self, request):
         data = request.data
-        # print("Event ID data----------", data)
-        event_id = data.get('event')  
-        # print("Event ID-----------", event_id)
+        event_id = data.get('event')
         # Ensure the event_id is valid
         try:
             event = Event.objects.get(pk=event_id)  # Fetch the Event instance using event_id
@@ -86,4 +84,32 @@ class CreateEventLocationView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# GET Event Details by ID API.
+class EventDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        operation_id="Get_event_by_id",
+        tags=["Event"],
+        manual_parameters=[
+            openapi.Parameter(
+                'event_id',
+                openapi.IN_PATH,
+                description="ID of the event to retrieve",
+                type=openapi.TYPE_INTEGER
+            )
+        ],
+        responses={
+            200: 'fetch Event successfully',
+            404: 'Event not found'
+        }
+    )
+
+    def get(self, request, event_id):
+        try:
+            event = Event.objects.get(event_id=event_id)
+        except Event.DoesNotExist:
+            return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 

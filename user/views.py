@@ -6,11 +6,11 @@ from .models import User, Role
 from .serializers import User_Serializer,ForgotPasswordSerializer,ResetPasswordSerializer, LoginSerializer, UserUpdateSerializer
 from rest_framework.views import APIView
 from rest_framework.renderers import JSONRenderer
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -185,8 +185,9 @@ class DeleteUser(APIView):
         
         
 class LogoutUser(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    # Allow any user to access this endpoint since it's for logout
+    permission_classes = [AllowAny]
+
     @swagger_auto_schema(
         operation_id="logout_user",
         tags=["User"],
@@ -197,29 +198,24 @@ class LogoutUser(APIView):
         },
     )
     def post(self, request):
-        try:
-            # Extract the refresh token from request data
-            refresh_token = request.data["refreshToken"]
-
-            # Decode and validate the token using RefreshToken
-            token = RefreshToken(refresh_token)
-            
-            # Blacklist the token
-            try:
-                # Check if the token is already blacklisted
-                BlacklistedToken.objects.get(token=OutstandingToken.objects.get(token=token))
-                return Response({'error': 'Token already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
-            except BlacklistedToken.DoesNotExist:
-                # If not already blacklisted, blacklist it
-                token.blacklist()
-                return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
-
-        except KeyError:
+        refresh_token = request.data.get("refreshToken")
+        
+        if not refresh_token:
             return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
-        except OutstandingToken.DoesNotExist:
-            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            # Decode the token and blacklist it
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
+
         except TokenError:
-            return Response({'error': 'Token is invalid or expired'}, status=status.HTTP_401_UNAUTHORIZED)
+            # If the token is invalid or expired, treat it as already logged out
+            return Response({'message': 'Logout successful (token already invalid or expired)'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Catch any other unexpected errors
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
