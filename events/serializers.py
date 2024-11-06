@@ -5,7 +5,7 @@ from user.serializers import User_Serializer
 
 
 class EventSerializer(serializers.ModelSerializer):
-    organizer = User_Serializer()
+    organizer = User_Serializer(read_only=True)
     class Meta:
         model = Event
         fields = ['event_id', 'event_name', 'description', 'date', 'organizer']
@@ -27,12 +27,20 @@ class EventLocationSerializer(serializers.ModelSerializer):
         model = EventLocation
         fields = ['location_name', 'address', 'pin_code', 'landmark', 'event'] 
 
+    # def validate_event(self, value):
+    #     # Ensure the `event` field is an integer (event_id), not an Event object
+    #     if isinstance(value, Event):
+    #         value = value.event_id  # Use the ID of the event if an object is passed
     def validate_event(self, value):
-        # Ensure the `event` field is an integer (event_id), not an Event object
-        if isinstance(value, Event):
-            value = value.event_id  # Use the ID of the event if an object is passed
-
-        if not Event.objects.filter(event_id=value).exists():
+        # Validate that the provided event exists
+        if not Event.objects.filter(pk=value).exists():
             raise serializers.ValidationError("Event does not exist.")
+        return value
+    
+    def create(self, validated_data):
+        event_id = validated_data.pop('event')  # Get event_id from validated data
+        event = Event.objects.get(pk=event_id)  # Fetch the Event instance using event_id
         
-        return value  # Return the validated event ID
+        # Create an EventLocation instance with the event
+        event_location = EventLocation.objects.create(event=event, **validated_data)
+        return event_location

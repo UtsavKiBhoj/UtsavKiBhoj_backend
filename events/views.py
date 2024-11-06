@@ -52,6 +52,41 @@ class EventListView(APIView):
         
         
 # Create Event Location View
+# class CreateEventLocationView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     @swagger_auto_schema(
+#         operation_id="Create_Event_Location",
+#         tags=["Event"],
+#         request_body=EventLocationSerializer,
+#         responses={201: 'Event Location created successfully', 400: 'Bad Request'}
+#     )
+#     def post(self, request):
+#        print("request.data-------------------:", request.data)  # Log full request data for debugging
+#        data = request.data
+#        event_id = data.get('event')
+#        if event_id is None:
+#            return Response({"error": "Event ID is missing in the request data."}, status=status.HTTP_400_BAD_REQUEST)
+    
+#        # Ensure the event_id is valid
+#        try:
+#            event = Event.objects.get(pk=event_id)  # Fetch the Event instance using event_id
+#        except Event.DoesNotExist:
+#            return Response({"error": "Event does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+
+#        # Pass the Event instance directly to the serializer
+#        serializer = EventLocationSerializer(data=data)
+#        print("Data before saving:", data)
+
+#        if serializer.is_valid():
+#           try:
+#              # Save the serializer and pass the event instance separately
+#             serializer.save(event=event)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#           except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CreateEventLocationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -62,22 +97,14 @@ class CreateEventLocationView(APIView):
         responses={201: 'Event Location created successfully', 400: 'Bad Request'}
     )
     def post(self, request):
-        data = request.data
-        event_id = data.get('event')
-        # Ensure the event_id is valid
-        try:
-            event = Event.objects.get(pk=event_id)  # Fetch the Event instance using event_id
-        except Event.DoesNotExist:
-            return Response({"error": "Event does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+        print("request.data-------------------:", request.data)  # Log full request data for debugging
 
-        # Pass the Event instance directly to the serializer
-        serializer = EventLocationSerializer(data=data)  # Do not pop 'event' from the data
-        print("Data before saving-----------------", data)
+        serializer = EventLocationSerializer(data=request.data)
+        print("Data before saving:", request.data)
 
         if serializer.is_valid():
             try:
-                # Save the serializer and pass the event instance separately
-                serializer.save(event=event)  # Pass the event instance to the save method
+                serializer.save()  # Save the serializer; event association is handled in the serializer
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -112,4 +139,3 @@ class EventDetailView(APIView):
 
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
