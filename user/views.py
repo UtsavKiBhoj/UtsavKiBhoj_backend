@@ -166,6 +166,8 @@ class UpdateUser(APIView):
     
 # Delete Users View.
 class DeleteUser(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_id="delete_user",
         tags=["User"],
@@ -242,7 +244,7 @@ class ForgotPasswordView(APIView):
                 return Response({'email': 'This email is not registered.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Generate the user ID and token
-            #urlsafe_base64_encode: Encodes the user's primary key (user.pk) in a URL-safe base64 format (uid). This helps ensure that the user ID is securely passed in the URL.
+            #urlsafe_base64_encode: Encodes the user's primary key (user.pk) in a URL-safe base64 format (uid). This helps to ensure that the user ID is securely passed in the URL.
             # PasswordResetTokenGenerator().make_token(user): Generates a secure token that will be sent in the password reset link to the user’s email.
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = PasswordResetTokenGenerator().make_token(user)
