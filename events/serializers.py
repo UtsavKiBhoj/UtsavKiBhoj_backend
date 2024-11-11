@@ -4,6 +4,7 @@ from django.utils import timezone
 from user.serializers import User_Serializer
 
 
+
 class EventSerializer(serializers.ModelSerializer):
     organizer = User_Serializer(read_only=True)
     class Meta:
@@ -22,25 +23,18 @@ class EventSerializer(serializers.ModelSerializer):
 
 # EventLocationSerializer 
 class EventLocationSerializer(serializers.ModelSerializer):
-    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
+    event_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = EventLocation
-        fields = ['location_name', 'address', 'pin_code', 'landmark', 'event'] 
+        fields = ['location_name', 'address', 'pin_code', 'landmark', 'event_id']
 
-    # def validate_event(self, value):
-    #     # Ensure the `event` field is an integer (event_id), not an Event object
-    #     if isinstance(value, Event):
-    #         value = value.event_id  # Use the ID of the event if an object is passed
-    def validate_event(self, value):
-        # Validate that the provided event exists
-        if not Event.objects.filter(pk=value).exists():
-            raise serializers.ValidationError("Event does not exist.")
-        return value
-    
     def create(self, validated_data):
-        event_id = validated_data.pop('event')  # Get event_id from validated data
-        event = Event.objects.get(pk=event_id)  # Fetch the Event instance using event_id
+        # Pop the event_id from validated_data
+        event_id = validated_data.pop('event_id')
         
-        # Create an EventLocation instance with the event
-        event_location = EventLocation.objects.create(event=event, **validated_data)
+        # Fetch the Event instance
+        event = Event.objects.get(pk=event_id)
+        
+        # Pass the event instance to create EventLocation
+        event_location = EventLocation.objects.create(event_id=event.event_id, **validated_data)
         return event_location
