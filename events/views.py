@@ -4,10 +4,12 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from .serializers import EventSerializer, EventLocationSerializer
 from .models import  Event, EventLocation
+from food.models import FoodDetail 
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from drf_yasg import openapi 
 from rest_framework.pagination import PageNumberPagination
+from django.http import JsonResponse
 
 
 # Create a pagination class
@@ -126,3 +128,30 @@ class EventDetailView(APIView):
 
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class EventDelete(APIView):
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        operation_id="Get_event_by_id",
+        tags=["Event"],
+        manual_parameters=[
+            openapi.Parameter(
+                'event_id',
+                openapi.IN_PATH,
+                description="ID of the event to retrieve",
+                type=openapi.TYPE_INTEGER
+            )
+        ],
+        responses={
+            200: 'fetch Event successfully',
+            404: 'Event not found'
+        }
+    )
+    def delete(self, request, event_id):
+        try:
+           event = Event.objects.get(event_id=event_id)
+           event.eventlocation_set.all().delete()  # Delete related locations
+           event.delete()
+           return JsonResponse({"message": "Event deleted successfully!"}, status=200)
+        except Event.DoesNotExist:
+            return JsonResponse({"error": "Event not found!"}, status=404)
