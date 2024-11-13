@@ -23,18 +23,13 @@ class EventSerializer(serializers.ModelSerializer):
 
 # EventLocationSerializer 
 class EventLocationSerializer(serializers.ModelSerializer):
-    event_id = serializers.IntegerField(write_only=True)
+    # Use `event` instead of `event_id` since it's a ForeignKey
+    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
+
     class Meta:
         model = EventLocation
-        fields = ['location_name', 'address', 'pin_code', 'landmark', 'event_id']
+        fields = ['location_name', 'address', 'pin_code', 'landmark', 'event']
 
     def create(self, validated_data):
-        # Pop the event_id from validated_data
-        event_id = validated_data.pop('event_id')
-        
-        # Fetch the Event instance
-        event = Event.objects.get(pk=event_id)
-        
-        # Pass the event instance to create EventLocation
-        event_location = EventLocation.objects.create(event_id=event.event_id, **validated_data)
-        return event_location
+        # No need to manually fetch `event` since `PrimaryKeyRelatedField` does it
+        return EventLocation.objects.create(**validated_data)

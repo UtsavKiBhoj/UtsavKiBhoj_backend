@@ -16,8 +16,8 @@ class Event(models.Model):
 
 
 class EventLocation(models.Model):
-    location = models.AutoField(primary_key=True)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)  # Foreign key referencing Events
+    location_id = models.AutoField(primary_key=True)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='location_name')  # Foreign key referencing Events
     location_name = models.CharField(max_length=255)
     address = models.TextField()
     pin_code = models.CharField(max_length=10, null=True, blank=True)  
