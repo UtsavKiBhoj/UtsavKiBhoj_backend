@@ -4,7 +4,7 @@ from events.models import Event
 # Create your models here.
 class FoodDetail(models.Model):
     food_id = models.AutoField(primary_key=True)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)  # Foreign key referencing Events
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="food_details")
     food_type = models.CharField(max_length=255)
     quantity = models.IntegerField()
     expiration_date = models.DateField()

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from .serializers import EventSerializer, EventLocationSerializer
+from .serializers import EventSerializer, EventLocationSerializer, EventUpdateSerializer
 from .models import  Event, EventLocation
 from food.models import FoodDetail 
 from drf_yasg.utils import swagger_auto_schema
@@ -116,27 +116,69 @@ class EventDetailView(APIView):
     
 class EventDelete(APIView):
     permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
-        operation_id="Get_event_by_id",
+        operation_id="Delete_event_by_id",
         tags=["Event"],
         manual_parameters=[
             openapi.Parameter(
                 'event_id',
                 openapi.IN_PATH,
-                description="ID of the event to retrieve",
+                description="ID of the event to delete",
                 type=openapi.TYPE_INTEGER
             )
         ],
         responses={
-            200: 'fetch Event successfully',
+            200: 'Event deleted successfully',
             404: 'Event not found'
         }
     )
     def delete(self, request, event_id):
         try:
-           event = Event.objects.get(event_id=event_id)
-           event.eventlocation_set.all().delete()  # Delete related locations
-           event.delete()
-           return JsonResponse({"message": "Event deleted successfully!"}, status=200)
+            # Fetch the event
+            event = Event.objects.get(event_id=event_id)
+
+            # Delete associated locations
+            event.location_name.all().delete()
+
+            # Delete associated food details if they exist
+            if hasattr(event, 'food_details'):
+               event.food_details.all().delete()
+
+            # Delete the event itself
+            event.delete()
+
+            return JsonResponse({"message": "Event deleted successfully!"}, status=200)
         except Event.DoesNotExist:
             return JsonResponse({"error": "Event not found!"}, status=404)
+        
+        
+# Event Update API.
+class EventUpdate(APIView):
+    permission_classes = [IsAuthenticated]
+    operation_id="Update_event_by_id",
+    tags=["Event"],
+    manual_parameters=[
+            openapi.Parameter(
+                'event_id',
+                openapi.IN_PATH,
+                description="ID of the event to Update",
+                type=openapi.TYPE_INTEGER
+            )
+        ],
+    responses={
+            200: 'Event deleted successfully',
+            404: 'Event not found'
+        }
+    def put(self, request, pk):
+        try:
+            event = Event.objects.get(pk=pk)
+            print("event---------------------------------", event)
+        except Event.DoesNotExist:
+            return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = EventUpdateSerializer(event, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
